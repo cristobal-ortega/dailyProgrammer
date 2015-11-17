@@ -52,6 +52,12 @@ char* toUnicode(char a) {
 		case '.':
 			return ".";
 			break;
+		case 'G':
+			return "G";
+			break;
+		case 'g':
+			return "g";
+			break;
 		default:
 			return "\u2650";
 			break;
@@ -103,45 +109,103 @@ void transformPiece(char init, char final) {
 
 }
 
-
-void processMove(char move[]){
-	int i = 0;
-	char column,row,piece,pos;
-	int columnBoard, rowBoard;
-
-	column = move[0];
-	row = move[1];
-
-	//King moves => no castling for them
-	if (column == 'e' && row == '8') {
-		printf("uops");
-		transformPiece('s','r');
-	}
-	if (column == 'e' && row == '1') {
-		printf("uops2");
-		transformPiece('S','R');
-	}
-	columnBoard = column - 'a';
-	rowBoard = 8 - (row-'0');
-
-	pos = rowBoard*8 + columnBoard;
-
-	//Tower move => no castling for that tower
+char castlingTower(char column, char row, char pos) {
+	char piece;
 	if ( (column == 'a' && row == '8') || (column == 'h' && row == '8'))
 		piece = 'r';
 	else if ( (column == 'a' && row == '1') || (column == 'h' && row == '1'))
 		piece = 'R';
 	else
 		piece = board[pos];
-	board[pos] = '.';
 
-	column = move[3];
-	row = move[4];
-	columnBoard = column - 'a';
-	rowBoard = 8 - (row-'0');
+	return piece;
+}
 
-	pos = rowBoard*8 + columnBoard;
-	board[pos] = piece;
+void castlingKing(char column, char row) {
+	if (column == 'e' && row == '8') {
+		transformPiece('s','r');
+	}
+	if (column == 'e' && row == '1') {
+		transformPiece('S','R');
+	}
+
+}
+
+
+void ghostPiece(char rowSrc, char rowDst, char columnSrc, char columnDst) {
+
+	char rowMiddle,posMiddle;
+	int cBoardMiddle, rBoardMiddle;
+	//Pawn moves 2 squares:
+	if (rowSrc == '7' && rowDst == '5' ) {
+		rowMiddle = '6';
+		cBoardMiddle = columnSrc - 'a';
+		rBoardMiddle = 8 - (rowMiddle - '0');
+		posMiddle = rBoardMiddle*8 + cBoardMiddle;
+		board[posMiddle] = 'g';
+	}
+	if (rowSrc == '2' && rowDst == '4' ) {
+		rowMiddle = '3';
+		cBoardMiddle = columnSrc - 'a';
+		rBoardMiddle = 8 - (rowMiddle - '0');
+		posMiddle = rBoardMiddle*8 + cBoardMiddle;
+		board[posMiddle] = 'G';
+	}
+
+
+}
+
+void movePawn(char piece, char posDst, char posSrc){
+	//Eating a ghost pawn
+	if(piece == 'p'){
+		if (board[posDst] == 'G')
+			board[posDst-'8'] = '.';
+		if (board[posSrc-8] == 'g')
+			board[posSrc-8] = '.';
+
+	}
+	if(piece == 'P'){
+		if (board[posDst] == 'g')
+			board[posDst+8] = '.';
+		if (board[posSrc+8] == 'G')
+			board[posSrc+8] = '.';
+	}
+}
+
+void processMove(char move[]){
+	int i = 0;
+	char columnSrc,rowSrc,columnDst,rowDst,piece,posSrc,posDst;
+	int cBoardSrc, rBoardSrc, cBoardDst, rBoardDst;
+
+	columnSrc = move[0];
+	rowSrc = move[1];
+	columnDst = move[3];
+	rowDst = move[4];
+
+	cBoardSrc = columnSrc - 'a';
+	rBoardSrc = 8 - (rowSrc - '0');
+
+	posSrc = rBoardSrc*8 + cBoardSrc;
+
+	//King moves => no castling for them
+	castlingKing(columnSrc,rowSrc);
+	//Tower move => no castling for that tower
+	piece = castlingTower(columnSrc,rowSrc,posSrc);
+
+
+
+	board[posSrc] = '.';
+
+	cBoardDst = columnDst - 'a';
+	rBoardDst = 8 - (rowDst - '0');
+
+	posDst = rBoardDst*8 + cBoardDst;
+
+	movePawn(piece,posDst,posSrc);
+
+	board[posDst] = piece;
+
+	ghostPiece(rowSrc, rowDst, columnSrc, columnDst);
 
 	printf("Something captured: %c\n", move[2]);
 
@@ -157,8 +221,8 @@ int main (int argc, char* argv[]) {
 
 	printBoard();
 
-	char white[8];
-	char black[8];
+	char white[7];
+	char black[7];
 	while(1) {
 		printf("Enter WHITE movement: ");
 		fgets(white, sizeof(white), stdin);
