@@ -10,6 +10,9 @@ char* toUnicode(char a) {
 		case 's':
 			return "\u265c";
 			break;
+		case 'r':
+			return "\u265c";
+			break;
 		case 'n':
 			return "\u265e";
 			break;
@@ -31,6 +34,9 @@ char* toUnicode(char a) {
 		case 'S':
 			return "\u2656";
 			break;
+		case 'R':
+			return "\u2656";
+			break;
 		case 'N':
 			return "\u2658";
 			break;
@@ -43,14 +49,11 @@ char* toUnicode(char a) {
 		case 'K':
 			return "\u2654";
 			break;
-		case '\n':
-			return "PENE";
-			break;
 		case '.':
 			return ".";
 			break;
 		default:
-			return "\u265c";
+			return "\u2650";
 			break;
 	}
 
@@ -59,8 +62,6 @@ char* toUnicode(char a) {
 void initBoard(char string[]) {
 	int i = 0;
 	int j = 0;
-	/*printf("%i\n", sizeof(string));*/
-	/*printf("%s\n", string);*/
 	while( i < 256 && string[i] != NULL) {
 		if(string[i] != '/'){
 			if (string[i] > '0' && string[i] < '9'){
@@ -94,25 +95,46 @@ void printBoard() {
 }
 
 
+void transformPiece(char init, char final) {
+	for(int i = 0; i < 64; ++i){
+		if (board[i] == init)
+			board[i] = final;
+	}
+
+}
+
+
 void processMove(char move[]){
 	int i = 0;
 	char column,row,piece,pos;
 	int columnBoard, rowBoard;
-	//printf("From: ");
+
 	column = move[0];
 	row = move[1];
+
+	//King moves => no castling for them
+	if (column == 'e' && row == '8') {
+		printf("uops");
+		transformPiece('s','r');
+	}
+	if (column == 'e' && row == '1') {
+		printf("uops2");
+		transformPiece('S','R');
+	}
 	columnBoard = column - 'a';
 	rowBoard = 8 - (row-'0');
 
 	pos = rowBoard*8 + columnBoard;
-	piece = board[pos];
+
+	//Tower move => no castling for that tower
+	if ( (column == 'a' && row == '8') || (column == 'h' && row == '8'))
+		piece = 'r';
+	else if ( (column == 'a' && row == '1') || (column == 'h' && row == '1'))
+		piece = 'R';
+	else
+		piece = board[pos];
 	board[pos] = '.';
-	//printf("Column: %c, Row: %c\n", column,row);
 
-	//printf("ColumnBoard: %i, RowBoard: %i\n", columnBoard,rowBoard);
-	//printf("Piece selected: %i  %s ", piece, toUnicode(board[piece]));
-
-	//printf("To: ");
 	column = move[3];
 	row = move[4];
 	columnBoard = column - 'a';
@@ -120,7 +142,6 @@ void processMove(char move[]){
 
 	pos = rowBoard*8 + columnBoard;
 	board[pos] = piece;
-	//printf("Column: %c, Row: %c\n", column,row);
 
 	printf("Something captured: %c\n", move[2]);
 
@@ -139,14 +160,14 @@ int main (int argc, char* argv[]) {
 	char white[8];
 	char black[8];
 	while(1) {
-		printf("Enter white movement: ");
+		printf("Enter WHITE movement: ");
 		fgets(white, sizeof(white), stdin);
 		printf("Movement is: %s\n", white);
 
 		processMove(white);
 		printBoard();
 
-		printf("Enter black movement: ");
+		printf("Enter BLACK movement: ");
 		fgets(black, sizeof(black), stdin);
 		printf("Movement is: %s\n", black);
 
